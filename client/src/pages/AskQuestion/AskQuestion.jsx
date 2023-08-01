@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import './AskQuestion.css'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -11,18 +11,38 @@ const AskQuestion = () =>  {
   const [questionTags, setQuestionTags ] = useState('');
 
   const dispatch = useDispatch()
-  const User = useSelector((state) => (state.currentUserReducer))
   const navigate = useNavigate()
+  const User = useSelector((state) => (state.currentUserReducer))
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if(User){
-        if(questionTitle && questionBody && questionTags){
-            dispatch(askQuestion({ questionTitle, questionBody, questionTags, userPosted: User.result.name }, navigate))
-        }
-        else alert("Please enter all the fields")
-    }
-    else alert("Login to ask question");
+  const questions = useSelector(state => state.questionsReducer.Asked );
+  
+  useEffect( () => {
+    if(User === null) {
+        alert("Please sign in to ask questions!");
+        navigate('/Auth');
+    } // eslint-disable-next-line 
+},[])
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+  // console.log({questionTitle, questionBody, questionTags})
+  // dispatch(askQuestion({ questionTitle, questionBody, questionTags, userPosted: User.result.name, userId: User.result._id }, navigate))
+  let asked = questions === undefined ? 0 : questions.data;
+
+  console.log(questions,asked);
+  if(User.result.subscription === "free" && asked < 1){
+      dispatch(askQuestion({ questionTitle, questionBody, questionTags, userPosted: User.result.name, userId: User.result._id }, navigate))
+  }
+  else if (User.result.subscription === "silver" && asked < 5){
+      dispatch(askQuestion({ questionTitle, questionBody, questionTags, userPosted: User.result.name, userId: User.result._id }, navigate))
+  }
+  else if (User.result.subscription === "gold"){
+      dispatch(askQuestion({ questionTitle, questionBody, questionTags, userPosted: User.result.name, userId: User.result._id }, navigate))
+  }
+  else {
+      alert("You have asked the Maximum number of questions today as your plan allows. Upgrade to silver or gold plan to ask more questions.");
+      navigate('/Subscription');
+  }
 }
 
   const handleEnter = (e) => {
@@ -31,6 +51,7 @@ const AskQuestion = () =>  {
     }
   }
   return (
+    <>
       <div>
         <div className="ask-question">
           <div className="ask-ques-container">
@@ -46,7 +67,7 @@ const AskQuestion = () =>  {
                 <label htmlFor="ask-ques-body">
                   <h4>Body</h4>
                   <p>Include all the information someone would need to answer your question</p>
-                  <textarea name="" id="ask-ques-body" onChange={(e) => {setQuestionBody(e.target.value)}} cols="30" rows="10" onKeyPress={handleEnter}></textarea>
+                  <textarea name="" id="ask-ques-body" onChange={(e) => {setQuestionBody(e.target.value)}} cols="30" rows="10" onKeyDown={handleEnter}></textarea>
                 </label>
                 
                 <label htmlFor="ask-ques-tags">
@@ -60,6 +81,7 @@ const AskQuestion = () =>  {
           </div>
         </div>
       </div>
+    </>
   )
 }
 
